@@ -1,6 +1,7 @@
 import pygame
 import math
-from levels import start, easy, medium, hard, expert
+import random
+from levels import start, easy, medium, hard, expert, extreme
 from player import player, projectile
 from enemy import enemy
 
@@ -14,12 +15,14 @@ if __name__ == '__main__':
         levels = medium
     elif difficulty == '3':
         levels = hard
-    else:
+    elif difficulty == '4':
         levels = expert
+    else:
+        levels = extreme
 
     #set up background
     pygame.init()
-    screen = pygame.display.set_mode((600, 600))
+    screen = pygame.display.set_mode((600, 600), pygame.FULLSCREEN)
     pygame.display.set_caption("DungeonLite")
     floor = pygame.image.load('images/dungeonFloor.png')
 
@@ -48,28 +51,25 @@ if __name__ == '__main__':
             screen.blit(person.right_img, (person.x, person.y))
 
         #update check for player attack
-        if pygame.mouse.get_pressed()[0] and not person.fired:
-            person.fired = True
-            person.spell = projectile(person.x, person.y)
-            person.spell.fire()
-        elif person.fired:
-            person.spell.update(screen)
-            if not(0 < person.spell.x < 600 and 0 < person.spell.y < 600):
-                person.fired = False
-                del person.spell
+        person.fireSpell(pygame, screen)
 
         #demon interactions
         for demon in demons[:]:
             if person.fired:
-                if demon.x < person.spell.x + 21 < demon.x + demon.width and demon.y < person.spell.y + 21 < demon.y + demon.height:
-                    demon.health -= person.attack
-                    score += 10
-                    del person.spell
-                    person.fired = False
+                for s in person.spell:
+                    if demon.x < s.x + 21 < demon.x + demon.width and demon.y < s.y + 21 < demon.y + demon.height:
+                        demon.health -= person.attack
+                        score += 10
+                        person.spell.remove(s)
+                    if len(person.spell) == 0:
+                        person.fired = False
+                        break
                 if demon.health <= 0:
                     score += 10
                     screen.blit(demon.explode_img, (demon.x, demon.y))
                     demons.remove(demon)
+                    if random.randint(0, 60) == 0:
+                        person.fireLimit += 1
             if not demon.dist:
                 demon.follow(person.x, person.y)
                 if person.x - 20 < demon.x + 40 < person.x + 70 and person.y - 20 < demon.y + 35 < person.y + 84:
